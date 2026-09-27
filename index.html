@@ -3,698 +3,246 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Taco Compass - Find the Nearest Taco Bell</title>
-  
-  <!-- Apple Mobile Web App Settings -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Taco Compass">
-  <meta name="theme-color" content="#0d0b14">
-
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            tbPurple: '#702082',
-            tbPurpleLight: '#9b2bb3',
-            tbMagenta: '#d0006f',
-            tbDark: '#0e0b16',
-            tbCard: '#1a162b',
-            tbCyan: '#00f2fe'
-          },
-          animation: {
-            'pulse-glow': 'pulseGlow 2.5s infinite ease-in-out',
-            'radar-sweep': 'radarSweep 3s linear infinite',
-          },
-          keyframes: {
-            pulseGlow: {
-              '0%, 100%': { opacity: '0.4', transform: 'scale(1)' },
-              '50%': { opacity: '0.8', transform: 'scale(1.05)' },
-            },
-            radarSweep: {
-              '0%': { transform: 'rotate(0deg)' },
-              '100%': { transform: 'rotate(360deg)' }
-            }
-          }
-        }
-      }
-    }
-  </script>
-
+  <title>Taco Compass</title>
   <style>
-    /* iOS Safe area paddings */
+    :root {
+      --bg: #0b0c10;
+      --card: #1f2833;
+      --accent: #702283;
+      --neon: #c000ff;
+      --text: #ffffff;
+      --muted: #a0aab2;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body {
-      padding-top: env(safe-area-inset-top);
-      padding-bottom: env(safe-area-inset-bottom);
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
-      -webkit-user-select: none;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: env(safe-area-inset-top, 20px) 16px env(safe-area-inset-bottom, 20px) 16px;
+      overflow: hidden;
     }
-
-    /* Radial grid pattern for high-tech radar feel */
-    .radar-bg {
-      background: radial-gradient(circle at center, #1f1638 0%, #0d091a 75%, #05040a 100%);
+    header { text-align: center; margin-top: 10px; }
+    h1 { font-size: 1.5rem; letter-spacing: 1px; color: #fff; text-transform: uppercase; }
+    #compass-container {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      margin: auto 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-
-    .dial-glow {
-      box-shadow: 0 0 35px rgba(155, 43, 179, 0.35), inset 0 0 25px rgba(208, 0, 111, 0.2);
+    .compass-dial {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 3px solid rgba(192, 0, 255, 0.3);
+      box-shadow: 0 0 25px rgba(112, 34, 131, 0.4);
     }
-
-    .needle-transition {
-      transition: transform 0.12s cubic-bezier(0.2, 0, 0.4, 1);
+    #needle {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      transition: transform 0.12s cubic-bezier(0.1, 0.9, 0.2, 1);
+      transform: rotate(0deg);
     }
+    .needle-pointer {
+      width: 0;
+      height: 0;
+      border-left: 18px solid transparent;
+      border-right: 18px solid transparent;
+      border-bottom: 50px solid var(--neon);
+      filter: drop-shadow(0 0 8px var(--neon));
+      margin-top: 10px;
+    }
+    #info-card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 16px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+      margin-bottom: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    #distance { font-size: 2.2rem; font-weight: 800; color: #fff; }
+    #store-name { font-size: 1.1rem; color: var(--muted); margin-top: 4px; }
+    .btn {
+      background: linear-gradient(135deg, #702283, #9b1eb8);
+      color: #fff;
+      border: none;
+      padding: 14px 28px;
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: 30px;
+      width: 100%;
+      max-width: 400px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(112, 34, 131, 0.5);
+    }
+    .btn:active { transform: scale(0.98); }
+    #maps-link { display: none; margin-top: 10px; color: #66fcf1; text-decoration: none; font-size: 0.9rem; }
   </style>
 </head>
+<body>
 
-<body class="radar-bg min-h-screen text-slate-100 flex flex-col justify-between overflow-x-hidden font-sans">
-
-  <header class="w-full px-5 pt-3 pb-2 flex items-center justify-between z-20">
-    <div class="flex items-center gap-2">
-      <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-tbMagenta to-tbPurple flex items-center justify-center shadow-lg shadow-purple-900/50">
-        <!-- Bell Icon / Taco Bell silhouette -->
-        <i data-lucide="bell" class="w-5 h-5 text-white"></i>
-      </div>
-      <div>
-        <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-1.5 leading-tight">
-          TACO COMPASS
-          <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-tbMagenta/20 text-tbMagenta font-semibold tracking-wider border border-tbMagenta/40">LIVE</span>
-        </h1>
-        <p class="text-[11px] text-slate-400">Nearest Taco Bell Wayfinder</p>
-      </div>
-    </div>
-
-    <!-- Actions / Manual coordinates modal toggle -->
-    <div class="flex items-center gap-2">
-      <button id="refreshBtn" title="Re-scan area" class="w-9 h-9 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-slate-300 hover:text-white active:scale-95 transition">
-        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-      </button>
-      <button id="settingsBtn" title="Location & Simulator Settings" class="w-9 h-9 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-slate-300 hover:text-white active:scale-95 transition">
-        <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
-      </button>
-    </div>
+  <header>
+    <h1>🌮 Taco Bell Radar</h1>
   </header>
 
-  <main class="flex-1 flex flex-col items-center justify-center px-4 py-2 relative">
-    
-    <!-- Target Distance Banner -->
-    <div id="targetSummary" class="text-center mb-4 transition-all duration-300">
-      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-1">
-        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-        <span id="targetName" class="text-xs font-medium text-slate-300">Locating target...</span>
-      </div>
-      <div class="flex items-baseline justify-center gap-1">
-        <span id="distValue" class="text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-pink-100 to-tbMagenta font-mono">--</span>
-        <span id="distUnit" class="text-lg font-bold text-tbPurpleLight">MI</span>
-      </div>
-      <p id="targetAddress" class="text-xs text-slate-400 max-w-xs mx-auto truncate mt-0.5">Searching for nearest location...</p>
-    </div>
-
-    <!-- Interactive Compass Dial -->
-    <div class="relative w-72 h-72 sm:w-80 sm:h-80 flex items-center justify-center">
-      
-      <!-- Outer Glow Ring -->
-      <div class="absolute inset-0 rounded-full border border-purple-500/20 dial-glow pointer-events-none"></div>
-
-      <!-- Radar sweeping line -->
-      <div class="absolute inset-2 rounded-full border border-slate-800/90 overflow-hidden pointer-events-none">
-        <div class="w-full h-full rounded-full animate-radar-sweep origin-center" style="background: conic-gradient(from 0deg, rgba(208, 0, 111, 0.15) 0deg, transparent 65deg);"></div>
-      </div>
-
-      <!-- Static Azimuth Ring (ticks and cardinal marks) -->
-      <div class="absolute inset-4 rounded-full border-2 border-slate-700/50 flex items-center justify-center">
-        <!-- Cardinals -->
-        <span class="absolute top-2 text-xs font-bold text-rose-400">N</span>
-        <span class="absolute right-3 text-xs font-bold text-slate-400">E</span>
-        <span class="absolute bottom-2 text-xs font-bold text-slate-400">S</span>
-        <span class="absolute left-3 text-xs font-bold text-slate-400">W</span>
-
-        <!-- Concentric Distance rings -->
-        <div class="w-48 h-48 rounded-full border border-purple-500/10"></div>
-        <div class="w-28 h-28 rounded-full border border-purple-500/10"></div>
-      </div>
-
-      <!-- ROTATING COMPASS NEEDLE & ARROW -->
-      <div id="needleContainer" class="absolute inset-0 flex items-center justify-center needle-transition will-change-transform">
-        <!-- Big Directional Arrow -->
-        <div class="relative flex flex-col items-center h-full justify-between py-6 pointer-events-none">
-          
-          <!-- Primary Pointer Head -->
-          <div class="flex flex-col items-center">
-            <div class="w-0 h-0 border-l-[16px] border-l-transparent border-r-[16px] border-r-transparent border-b-[36px] border-b-tbMagenta drop-shadow-[0_0_12px_rgba(208,0,111,0.8)]"></div>
-            <div class="w-2.5 h-12 bg-gradient-to-b from-tbMagenta to-tbPurple rounded-b-sm"></div>
-          </div>
-
-          <!-- Counterbalance Tail -->
-          <div class="flex flex-col items-center opacity-60">
-            <div class="w-2 h-10 bg-slate-600 rounded-t-sm"></div>
-            <div class="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[18px] border-t-slate-600"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Center Pivot Hub (Taco Icon) -->
-      <div class="absolute w-14 h-14 rounded-full bg-slate-900 border-2 border-tbMagenta flex items-center justify-center shadow-xl z-10 cursor-pointer active:scale-95 transition" id="centerBellBadge">
-        <span class="text-2xl filter drop-shadow">🌮</span>
-      </div>
-    </div>
-
-    <!-- Live Degrees and Bearing telemetry -->
-    <div class="mt-4 flex items-center gap-6 text-center text-xs font-mono">
-      <div>
-        <span class="text-slate-500 block text-[10px] tracking-wider uppercase">Heading</span>
-        <span id="headingDisplay" class="font-bold text-slate-200">0° (N)</span>
-      </div>
-      <div class="h-6 w-px bg-slate-800"></div>
-      <div>
-        <span class="text-slate-500 block text-[10px] tracking-wider uppercase">Target Bearing</span>
-        <span id="bearingDisplay" class="font-bold text-tbCyan">--°</span>
-      </div>
-      <div class="h-6 w-px bg-slate-800"></div>
-      <div>
-        <span class="text-slate-500 block text-[10px] tracking-wider uppercase">Relative Turn</span>
-        <span id="relativeTurnDisplay" class="font-bold text-pink-400">--°</span>
-      </div>
-    </div>
-  </main>
-
-  <footer class="w-full px-5 pb-6 pt-2 space-y-3 z-20 max-w-md mx-auto">
-    
-    <!-- iOS / Sensor Permission Banner (Hidden once activated) -->
-    <div id="permissionCard" class="bg-gradient-to-r from-tbPurple/90 to-tbMagenta/90 p-4 rounded-2xl shadow-xl flex flex-col gap-2.5">
-      <div class="flex items-center gap-2.5">
-        <i data-lucide="compass" class="w-6 h-6 text-white shrink-0"></i>
-        <div>
-          <h3 class="font-bold text-sm text-white leading-tight">Enable Live Compass</h3>
-          <p class="text-[11px] text-pink-100">Tap below to grant iOS motion & location permissions.</p>
-        </div>
-      </div>
-      <button id="activateSensorsBtn" class="w-full py-2.5 px-4 bg-white text-tbDark font-bold rounded-xl text-xs hover:bg-slate-100 active:scale-[0.98] transition shadow-md flex items-center justify-center gap-1.5">
-        <i data-lucide="zap" class="w-4 h-4 text-tbMagenta"></i>
-        <span>Start Taco Radar</span>
-      </button>
-    </div>
-
-    <!-- Quick action buttons -->
-    <div class="grid grid-cols-2 gap-2">
-      <a id="openMapsBtn" href="#" target="_blank" class="py-2.5 px-3 rounded-xl bg-slate-800/90 border border-slate-700/80 text-xs font-semibold flex items-center justify-center gap-2 text-slate-200 hover:text-white active:scale-95 transition shadow-md pointer-events-none opacity-50">
-        <i data-lucide="navigation" class="w-3.5 h-3.5 text-tbCyan"></i>
-        <span>Open in Maps</span>
-      </a>
-      <button id="fetchNearestOverpassBtn" class="py-2.5 px-3 rounded-xl bg-slate-800/90 border border-slate-700/80 text-xs font-semibold flex items-center justify-center gap-2 text-slate-200 hover:text-white active:scale-95 transition shadow-md">
-        <i data-lucide="radar" class="w-3.5 h-3.5 text-tbMagenta"></i>
-        <span>Find Nearest</span>
-      </button>
-    </div>
-
-    <!-- Live Status / Accuracy Footer -->
-    <div class="flex items-center justify-between text-[11px] text-slate-400 px-1">
-      <div class="flex items-center gap-1.5">
-        <div id="gpsStatusDot" class="w-2 h-2 rounded-full bg-amber-400"></div>
-        <span id="gpsStatusText">Waiting for GPS...</span>
-      </div>
-      <span id="gpsAccuracy">±-- m</span>
-    </div>
-  </footer>
-
-  <div id="settingsDrawer" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center transition-opacity">
-    <div class="bg-tbCard border-t sm:border border-purple-500/30 rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto space-y-4 shadow-2xl">
-      <div class="flex justify-between items-center pb-2 border-b border-slate-800">
-        <h3 class="text-sm font-bold text-white flex items-center gap-2">
-          <i data-lucide="settings" class="w-4 h-4 text-tbMagenta"></i>
-          Radar Settings & Testing
-        </h3>
-        <button id="closeSettingsBtn" class="text-slate-400 hover:text-white p-1 rounded-lg">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <div class="space-y-3 text-xs">
-        <p class="text-slate-400 leading-relaxed">
-          Need to test on your Windows PC or without moving? Simulate a location or drag the heading slider below.
-        </p>
-
-        <!-- Simulated Heading Slider for desktop testing -->
-        <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 space-y-2">
-          <div class="flex justify-between font-medium">
-            <span class="text-slate-300">Simulate Phone Heading:</span>
-            <span id="simHeadingLabel" class="text-tbCyan font-mono">0°</span>
-          </div>
-          <input type="range" id="simHeadingSlider" min="0" max="359" value="0" class="w-full accent-tbMagenta cursor-pointer">
-        </div>
-
-        <!-- Custom Destination Overrides -->
-        <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 space-y-2">
-          <label class="block font-medium text-slate-300">Target Taco Bell Coordinates</label>
-          <div class="grid grid-cols-2 gap-2">
-            <input type="number" step="0.0001" id="customLatInput" placeholder="Latitude (e.g. 34.0522)" class="w-full bg-slate-800 text-white rounded-lg px-2.5 py-1.5 border border-slate-700 text-xs">
-            <input type="number" step="0.0001" id="customLonInput" placeholder="Longitude (e.g. -118.243)" class="w-full bg-slate-800 text-white rounded-lg px-2.5 py-1.5 border border-slate-700 text-xs">
-          </div>
-          <button id="applyCustomCoordBtn" class="w-full py-1.5 bg-tbPurple text-white rounded-lg font-semibold hover:bg-tbPurpleLight transition">
-            Set Manual Target
-          </button>
-        </div>
-
-        <!-- Preset sample locations -->
-        <div class="space-y-1">
-          <span class="text-slate-400 font-semibold block text-[11px]">Quick Sample Taco Bells:</span>
-          <div class="grid grid-cols-2 gap-2">
-            <button class="preset-loc-btn text-left p-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50" data-name="Taco Bell Cantina (Las Vegas Strip)" data-lat="36.1068" data-lon="-115.1729">
-              <span class="font-bold text-white block truncate">Vegas Cantina</span>
-              <span class="text-[10px] text-slate-400 block">36.106, -115.172</span>
-            </button>
-            <button class="preset-loc-btn text-left p-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50" data-name="Taco Bell Cantina (Pacifica Beach)" data-lat="37.5985" data-lon="-122.5028">
-              <span class="font-bold text-white block truncate">Pacifica Beach</span>
-              <span class="text-[10px] text-slate-400 block">37.598, -122.502</span>
-            </button>
-          </div>
-        </div>
-      </div>
+  <div id="compass-container">
+    <div class="compass-dial"></div>
+    <div id="needle">
+      <div class="needle-pointer"></div>
     </div>
   </div>
 
+  <div id="info-card">
+    <div id="distance">-- mi</div>
+    <div id="store-name">Tap start below to acquire GPS</div>
+    <a id="maps-link" target="_blank" rel="noopener">Open in Apple / Google Maps</a>
+  </div>
+
+  <button class="btn" id="start-btn">Start Radar</button>
+
   <script>
-    // App State
-    const state = {
-      userLat: null,
-      userLon: null,
-      accuracy: null,
-      heading: 0,              // User orientation in degrees (0 = North)
-      targetLat: null,
-      targetLon: null,
-      targetName: 'Taco Bell',
-      targetAddress: '',
-      targetBearing: 0,         // Degrees from user to target
-      distanceMeters: null,
-      isSimulatingHeading: false,
-      sensorActive: false,
-      lastRotDegrees: 0        // Continuous needle angle to prevent 360 wrap flickers
-    };
+    // Replace with your Mapbox Public Token
+    const MAPBOX_TOKEN = 'pk.eyJ1IjoiemFjaGdsaWVicyIsImEiOiJjbXVrODI4MzkwM2s2MnduNGRpZWgzcGloIn0.-rgfqapmwN9HGWEEpRqJoA';
 
-    // DOM Elements
-    const needleContainer = document.getElementById('needleContainer');
-    const distValue = document.getElementById('distValue');
-    const distUnit = document.getElementById('distUnit');
-    const targetNameEl = document.getElementById('targetName');
-    const targetAddressEl = document.getElementById('targetAddress');
-    const headingDisplay = document.getElementById('headingDisplay');
-    const bearingDisplay = document.getElementById('bearingDisplay');
-    const relativeTurnDisplay = document.getElementById('relativeTurnDisplay');
-    const gpsStatusDot = document.getElementById('gpsStatusDot');
-    const gpsStatusText = document.getElementById('gpsStatusText');
-    const gpsAccuracy = document.getElementById('gpsAccuracy');
-    const openMapsBtn = document.getElementById('openMapsBtn');
-    const permissionCard = document.getElementById('permissionCard');
-    const activateSensorsBtn = document.getElementById('activateSensorsBtn');
-    const fetchNearestOverpassBtn = document.getElementById('fetchNearestOverpassBtn');
-    const refreshBtn = document.getElementById('refreshBtn');
-    const settingsBtn = document.getElementById('settingsBtn');
-    const closeSettingsBtn = document.getElementById('closeSettingsBtn');
-    const settingsDrawer = document.getElementById('settingsDrawer');
-    const simHeadingSlider = document.getElementById('simHeadingSlider');
-    const simHeadingLabel = document.getElementById('simHeadingLabel');
-    const customLatInput = document.getElementById('customLatInput');
-    const customLonInput = document.getElementById('customLonInput');
-    const applyCustomCoordBtn = document.getElementById('applyCustomCoordBtn');
+    let userCoords = null;
+    let targetCoords = null;
+    let compassHeading = 0;
+    let targetBearing = 0;
+    let watchId = null;
 
-    // Initialize Lucide icons
-    lucide.createIcons();
+    const startBtn = document.getElementById('start-btn');
+    const needle = document.getElementById('needle');
+    const distEl = document.getElementById('distance');
+    const nameEl = document.getElementById('store-name');
+    const mapsLink = document.getElementById('maps-link');
 
-    /**
-     * Converts degrees to radians.
-     */
-    function toRad(deg) {
-      return (deg * Math.PI) / 180;
-    }
-
-    /**
-     * Converts radians to degrees.
-     */
-    function toDeg(rad) {
-      return (rad * 180) / Math.PI;
-    }
-
-    /**
-     * Calculates great-circle distance between two points in meters (Haversine formula).
-     */
+    // Haversine formula to compute great-circle distance
     function calculateDistance(lat1, lon1, lat2, lon2) {
-      const R = 6371e3; // Earth radius in meters
-      const φ1 = toRad(lat1);
-      const φ2 = toRad(lat2);
-      const Δφ = toRad(lat2 - lat1);
-      const Δλ = toRad(lon2 - lon1);
-
-      const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-                Math.cos(φ1) * Math.cos(φ2) *
-                Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
+      const R = 3958.8; // Radius in miles
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
       return R * c;
     }
 
-    /**
-     * Calculates initial forward bearing from user coordinates to target coordinates in degrees (0-360).
-     */
+    // Initial bearing between two GPS points
     function calculateBearing(lat1, lon1, lat2, lon2) {
-      const φ1 = toRad(lat1);
-      const φ2 = toRad(lat2);
-      const Δλ = toRad(lon2 - lon1);
-
+      const φ1 = lat1 * Math.PI / 180;
+      const φ2 = lat2 * Math.PI / 180;
+      const Δλ = (lon2 - lon1) * Math.PI / 180;
       const y = Math.sin(Δλ) * Math.cos(φ2);
-      const x = Math.cos(φ1) * Math.sin(φ2) -
-                Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
-      const θ = Math.atan2(y, x);
-      return (toDeg(θ) + 360) % 360;
+      const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+      return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
     }
 
-    /**
-     * Formats distance into miles or feet (or meters if very close).
-     */
-    function formatDistance(meters) {
-      if (meters === null || isNaN(meters)) return { value: '--', unit: 'MI' };
-      const miles = meters / 1609.344;
-      if (miles < 0.1) {
-        const feet = Math.round(meters * 3.28084);
-        return { value: feet.toLocaleString(), unit: 'FT' };
-      } else if (miles < 10) {
-        return { value: miles.toFixed(2), unit: 'MI' };
-      } else {
-        return { value: miles.toFixed(1), unit: 'MI' };
-      }
-    }
-
-    /**
-     * Returns compass cardinal direction letter from degrees.
-     */
-    function getCardinal(deg) {
-      const cardinals = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW', 'N'];
-      return cardinals[Math.round(((deg %= 360) < 0 ? deg + 360 : deg) / 45)];
-    }
-
-    /**
-     * Updates the compass needle orientation and numerical readouts.
-     */
-    function updateCompassDisplay() {
-      if (state.userLat !== null && state.targetLat !== null) {
-        // Calculate bearing & distance
-        state.targetBearing = calculateBearing(state.userLat, state.userLon, state.targetLat, state.targetLon);
-        state.distanceMeters = calculateDistance(state.userLat, state.userLon, state.targetLat, state.targetLon);
-
-        const { value, unit } = formatDistance(state.distanceMeters);
-        distValue.textContent = value;
-        distUnit.textContent = unit;
-
-        bearingDisplay.textContent = `${Math.round(state.targetBearing)}°`;
-
-        // The angle to point needle is (Target Bearing - Phone Compass Heading)
-        let relativeAngle = (state.targetBearing - state.heading + 360) % 360;
-        relativeTurnDisplay.textContent = `${Math.round(relativeAngle)}°`;
-
-        // Calculate smooth rotation without 360° spin flip
-        let diff = (relativeAngle - (state.lastRotDegrees % 360));
-        if (diff > 180) diff -= 360;
-        if (diff < -180) diff += 360;
-        state.lastRotDegrees += diff;
-
-        needleContainer.style.transform = `rotate(${state.lastRotDegrees}deg)`;
-      }
-
-      // Display Heading
-      headingDisplay.textContent = `${Math.round(state.heading)}° (${getCardinal(state.heading)})`;
-    }
-
-    /**
-     * Queries OpenStreetMap's Overpass API for the nearest Taco Bell around the user.
-     */
-    async function fetchNearestTacoBell(lat, lon) {
-      targetNameEl.textContent = 'Searching Overpass API...';
-      targetAddressEl.textContent = 'Scanning 25km radius for Taco Bell';
-      gpsStatusDot.className = 'w-2 h-2 rounded-full bg-cyan-400 animate-ping';
-      gpsStatusText.textContent = 'Querying OSM...';
-
-      // 25,000 meter radius around user coords
-      const radius = 25000;
-      const overpassQuery = `
-        [out:json][timeout:15];
-        (
-          node["amenity"="fast_food"]["name"~"Taco Bell",i](around:${radius},${lat},${lon});
-          way["amenity"="fast_food"]["name"~"Taco Bell",i](around:${radius},${lat},${lon});
-          node["brand"="Taco Bell"](around:${radius},${lat},${lon});
-          way["brand"="Taco Bell"](around:${radius},${lat},${lon});
-        );
-        out center 15;
-      `;
+    async function findNearestTacoBell(lat, lon) {
+      nameEl.innerText = 'Searching nearby stores...';
+      const query = encodeURIComponent('Taco Bell');
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${query}.json?proximity=${lon},${lat}&limit=1&access_token=${MAPBOX_TOKEN}`;
 
       try {
-        const response = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`);
-        if (!response.ok) throw new Error('Overpass response not ok');
-        const data = await response.json();
-
-        if (data.elements && data.elements.length > 0) {
-          // Sort results by actual distance to current location
-          let closest = null;
-          let minDistance = Infinity;
-
-          data.elements.forEach(item => {
-            const itemLat = item.lat || (item.center && item.center.lat);
-            const itemLon = item.lon || (item.center && item.center.lon);
-            if (itemLat && itemLon) {
-              const d = calculateDistance(lat, lon, itemLat, itemLon);
-              if (d < minDistance) {
-                minDistance = d;
-                closest = {
-                  lat: itemLat,
-                  lon: itemLon,
-                  name: item.tags?.name || 'Taco Bell',
-                  street: item.tags?.['addr:street'] ? `${item.tags['addr:housenumber'] || ''} ${item.tags['addr:street']}`.trim() : null,
-                  city: item.tags?.['addr:city'] || ''
-                };
-              }
-            }
-          });
-
-          if (closest) {
-            setTarget(closest.lat, closest.lon, closest.name, closest.street || `${closest.city || 'Nearby Location'}`);
-            gpsStatusDot.className = 'w-2 h-2 rounded-full bg-emerald-400';
-            gpsStatusText.textContent = 'Found nearest Taco Bell';
-            return;
-          }
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!data.features || data.features.length === 0) {
+          nameEl.innerText = 'No Taco Bell found within range.';
+          return;
         }
 
-        // If no results in 25km, notify user and apply a relative offset for testing
-        targetNameEl.textContent = 'No Taco Bell within 25km';
-        targetAddressEl.textContent = 'Showing estimated direction';
-        gpsStatusDot.className = 'w-2 h-2 rounded-full bg-amber-400';
-        gpsStatusText.textContent = 'No local match in range';
+        const feature = data.features[0];
+        targetCoords = { lat: feature.center[1], lon: feature.center[0] };
+        nameEl.innerText = feature.place_name.split(',')[0];
+
+        mapsLink.href = `https://maps.apple.com/?daddr=${targetCoords.lat},${targetCoords.lon}`;
+        mapsLink.style.display = 'inline-block';
+
+        updateMetrics();
       } catch (err) {
-        console.warn('Overpass lookup failed, utilizing fallback mock location:', err);
-        gpsStatusDot.className = 'w-2 h-2 rounded-full bg-amber-400';
-        gpsStatusText.textContent = 'API busy; using fallback target';
-        
-        // Provide mock target offset ~1.8 miles North-East so compass is immediately useful
-        setTarget(lat + 0.02, lon + 0.02, 'Taco Bell (Sample Target)', '123 Cantina Way');
+        nameEl.innerText = 'Failed to load location from Mapbox.';
       }
     }
 
-    /**
-     * Sets destination target and updates maps routing link.
-     */
-    function setTarget(lat, lon, name, address) {
-      state.targetLat = lat;
-      state.targetLon = lon;
-      state.targetName = name || 'Taco Bell';
-      state.targetAddress = address || 'Open map for full route';
-
-      targetNameEl.textContent = state.targetName;
-      targetAddressEl.textContent = state.targetAddress;
-
-      // Update Native Map URL (Apple Maps on iOS, Google Maps elsewhere)
-      const isApple = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
-      if (isApple) {
-        openMapsBtn.href = `maps://?q=${encodeURIComponent(state.targetName)}&daddr=${lat},${lon}`;
-      } else {
-        openMapsBtn.href = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`;
-      }
-      openMapsBtn.classList.remove('opacity-50', 'pointer-events-none');
-
-      updateCompassDisplay();
+    function updateMetrics() {
+      if (!userCoords || !targetCoords) return;
+      const dist = calculateDistance(userCoords.lat, userCoords.lon, targetCoords.lat, targetCoords.lon);
+      distEl.innerText = dist < 0.1 ? `${Math.round(dist * 5280)} ft` : `${dist.toFixed(2)} mi`;
+      targetBearing = calculateBearing(userCoords.lat, userCoords.lon, targetCoords.lat, targetCoords.lon);
+      updateNeedle();
     }
 
-    /**
-     * Handles orientation event data from iOS (webkitCompassHeading) or standard deviceorientation.
-     */
-    function handleOrientation(event) {
-      if (state.isSimulatingHeading) return;
-
-      // iOS Safari provides webkitCompassHeading directly relative to magnetic North (0 - 360)
-      if (typeof event.webkitCompassHeading !== 'undefined' && event.webkitCompassHeading !== null) {
-        state.heading = event.webkitCompassHeading;
-      } else if (event.alpha !== null) {
-        // Android / non-Apple fallback: alpha is 0 when pointing to start orientation, or inverted
-        // Convert alpha (compass heading is roughly 360 - alpha)
-        state.heading = (360 - event.alpha) % 360;
-      }
-
-      updateCompassDisplay();
+    function updateNeedle() {
+      // Rotation angle is the target's bearing relative to the heading of the phone
+      const rotation = (targetBearing - compassHeading + 360) % 360;
+      needle.style.transform = `rotate(${rotation}deg)`;
     }
 
-    /**
-     * Requests Device Orientation Permission on iOS 13+ and activates sensor listeners.
-     */
-    async function requestDeviceSensors() {
-      // Check for iOS 13+ permission dialog API
+    // Handles iOS DeviceOrientation permission
+    async function startCompass() {
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        try {
-          const permission = await DeviceOrientationEvent.requestPermission();
-          if (permission === 'granted') {
-            window.addEventListener('deviceorientation', handleOrientation, true);
-            state.sensorActive = true;
-            permissionCard.classList.add('hidden');
-          } else {
-            alert('Sensor permission denied. You can still test heading with the slider in Settings.');
-          }
-        } catch (error) {
-          console.error('Error requesting orientation permission:', error);
-          window.addEventListener('deviceorientation', handleOrientation, true);
-          permissionCard.classList.add('hidden');
+        const response = await DeviceOrientationEvent.requestPermission();
+        if (response !== 'granted') {
+          alert('Compass orientation permission is required to point the needle.');
+          return;
         }
-      } else {
-        // Standard Android or Desktop browser
-        window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-        window.addEventListener('deviceorientation', handleOrientation, true);
-        state.sensorActive = true;
-        permissionCard.classList.add('hidden');
       }
 
-      // Start watching user GPS coordinates
-      startGeolocation();
+      window.addEventListener('deviceorientation', (e) => {
+        if (e.webkitCompassHeading !== undefined) {
+          // iOS Safari provides true compass heading directly
+          compassHeading = e.webkitCompassHeading;
+        } else if (e.alpha !== null) {
+          // Non-iOS fallback
+          compassHeading = 360 - e.alpha;
+        }
+        updateNeedle();
+      }, true);
     }
 
-    /**
-     * Watches GPS coordinates with high accuracy.
-     */
-    function startGeolocation() {
-      if (!navigator.geolocation) {
-        gpsStatusText.textContent = 'Geolocation not supported';
-        gpsStatusDot.className = 'w-2 h-2 rounded-full bg-red-500';
+    function startGPS() {
+      if (!('geolocation' in navigator)) {
+        alert('Geolocation is not supported by your browser.');
         return;
       }
 
-      gpsStatusText.textContent = 'Acquiring GPS fix...';
-      gpsStatusDot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-pulse';
-
-      navigator.geolocation.watchPosition(
-        (position) => {
-          const { latitude, longitude, accuracy } = position.coords;
-          const isFirstFix = (state.userLat === null);
-
-          state.userLat = latitude;
-          state.userLon = longitude;
-          state.accuracy = accuracy;
-
-          gpsStatusText.textContent = 'GPS Active';
-          gpsStatusDot.className = 'w-2 h-2 rounded-full bg-emerald-400';
-          gpsAccuracy.textContent = `±${Math.round(accuracy)}m`;
-
-          // If this is our first location fix and no target is set, find nearest Taco Bell
-          if (isFirstFix) {
-            fetchNearestTacoBell(latitude, longitude);
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          const firstFix = !userCoords;
+          userCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+          if (firstFix) {
+            findNearestTacoBell(userCoords.lat, userCoords.lon);
           } else {
-            updateCompassDisplay();
+            updateMetrics();
           }
         },
-        (error) => {
-          console.warn('Geolocation error:', error.message);
-          gpsStatusText.textContent = 'GPS Unavailable (Demo mode)';
-          gpsStatusDot.className = 'w-2 h-2 rounded-full bg-rose-500';
-          
-          // Provide fallback demo user position (e.g. Irvine, CA Taco Bell HQ area)
-          if (state.userLat === null) {
-            state.userLat = 33.6595;
-            state.userLon = -117.7686;
-            setTarget(33.6575, -117.7455, 'Taco Bell (Irvine)', '1 Glen Bell Way');
-          }
+        (err) => {
+          nameEl.innerText = `GPS Error: ${err.message}`;
         },
-        {
-          enableHighAccuracy: true,
-          maximumAge: 5000,
-          timeout: 10000
-        }
+        { enableHighAccuracy: true, maximumAge: 1000 }
       );
     }
 
-    // Activate sensors button tap
-    activateSensorsBtn.addEventListener('click', () => {
-      requestDeviceSensors();
-    });
-
-    // Re-scan nearest button
-    fetchNearestOverpassBtn.addEventListener('click', () => {
-      if (state.userLat && state.userLon) {
-        fetchNearestTacoBell(state.userLat, state.userLon);
-      } else {
-        requestDeviceSensors();
-      }
-    });
-
-    refreshBtn.addEventListener('click', () => {
-      if (state.userLat && state.userLon) {
-        fetchNearestTacoBell(state.userLat, state.userLon);
-      } else {
-        requestDeviceSensors();
-      }
-    });
-
-    // Settings Modal toggles
-    settingsBtn.addEventListener('click', () => {
-      settingsDrawer.classList.remove('hidden');
-    });
-
-    closeSettingsBtn.addEventListener('click', () => {
-      settingsDrawer.classList.add('hidden');
-    });
-
-    // Heading simulation slider (great for testing on Windows desktop)
-    simHeadingSlider.addEventListener('input', (e) => {
-      state.isSimulatingHeading = true;
-      state.heading = parseFloat(e.target.value);
-      simHeadingLabel.textContent = `${state.heading}°`;
-      updateCompassDisplay();
-    });
-
-    // Custom Target Coordinates
-    applyCustomCoordBtn.addEventListener('click', () => {
-      const lat = parseFloat(customLatInput.value);
-      const lon = parseFloat(customLonInput.value);
-      if (!isNaN(lat) && !isNaN(lon)) {
-        setTarget(lat, lon, 'Custom Taco Target', `${lat.toFixed(4)}, ${lon.toFixed(4)}`);
-        settingsDrawer.classList.add('hidden');
-      }
-    });
-
-    // Preset Buttons
-    document.querySelectorAll('.preset-loc-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const lat = parseFloat(btn.dataset.lat);
-        const lon = parseFloat(btn.dataset.lon);
-        const name = btn.dataset.name;
-        setTarget(lat, lon, name, `${lat.toFixed(4)}, ${lon.toFixed(4)}`);
-        settingsDrawer.classList.add('hidden');
-      });
-    });
-
-    // Initial check: if already on Android/PC or permission not needed, auto-listen
-    window.addEventListener('DOMContentLoaded', () => {
-      // If not iOS, the card can remain as a clear call-to-action or prompt
-      if (!('requestPermission' in DeviceOrientationEvent)) {
-        // Normal browser, auto-listen
-        window.addEventListener('deviceorientation', handleOrientation, true);
-      }
+    startBtn.addEventListener('click', async () => {
+      startBtn.style.display = 'none';
+      await startCompass();
+      startGPS();
     });
   </script>
 </body>
